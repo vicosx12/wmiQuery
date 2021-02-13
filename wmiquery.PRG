@@ -1,6 +1,6 @@
 **************************************************************
-* Marco Plaza, 2018
-* @nfoxProject
+* Marco Plaza, 2018,2021
+* @nfoxDev
 * https://github.com/nftools/wmiquery
 **************************************************************
 *
@@ -9,37 +9,34 @@
 * simple usage: wmiQuery( wmiQuery [, wmiClass] ) 
 * ( wmiclass defaults to "CIMV2" )
 *
-* Returns: Object 
+* Returns: Object as #oWmiResult
 *
-* Object schema ( as nxs https://github.com/nftools/nxs ):
-*
-*.oWmiResult:
-*      .count = i
+*#oWmiResult:
+*      .count = "i"
 *      .items[]
-*         -item = v
+*         -item = "v"
 *
 * sample procedure "testme" included below
-*
 *****************************************************************
-Parameters wmiquery,wmiclass
+Parameters wmiClass,wmiNameSpace
 
 Private All
 
-wmiclass = Evl(m.wmiclass,'CIMV2')
-wmiquery = Evl(m.wmiquery,'')
+wmiClass	 = Evl(m.wmiClass,'')
+wmiNameSpace = Evl(m.wmiNameSpace,'CIMV2')
 
 emessage = ''
 
 Try
-   objwmiservice = Getobject("winmgmts:\\.\root\"+m.wmiclass)
-   oquery = objwmiservice.execquery( 'SELECT * FROM '+m.wmiquery,,48)
-   owmi = processobject( oquery )
+   objwmiservice = Getobject("winmgmts://./root/"+m.wmiNameSpace)
+   oquery	= objwmiservice.execquery( 'SELECT * FROM '+m.wmiClass,,48)
+   owmi		= processobject( m.oquery )
 Catch To oerr
    emessage = m.oerr.Message
 Endtry
 
 If !Empty(m.emessage)
-   Error ' Invalid Query/WmiClass '
+   Error ' Invalid WMI Class or NameSpace '
    Return .Null.
 Else
    Return m.owmi
@@ -121,10 +118,31 @@ For Each property In m.oitem.properties_
    Endtry
 Endfor
 
+*----------------------------------
+procedure testme
+*----------------------------------
+Public oinfo
+
+oinfo = Create('empty')
+
+Wait 'Running WMI Query....please wait.. ' Window Nowait At Wrows()/2,Wcols()/2
+
+
+addproperty( oinfo, "monitors"  , wmiquery('Win32_PNPEntity where service = "monitor"') )
+addproperty( oInfo, "diskdrive" , wmiquery('Win32_diskDrive') )
+addproperty( oInfo, "startup" ,   wmiquery('Win32_startupCommand'))
+addproperty( oInfo, "BaseBoard" , wmiquery('Win32_baseBoard') )
+addproperty( oInfo, "netAdaptersConfig",  wmiquery('Win32_NetworkAdapterConfiguration') )
+
+
+Messagebox( 'Please explore "oInfo" in debugger watch window or command line ',0)
+
+
+
 *---------------------------------------------------------------------------------
-Procedure testme 
+Procedure testme_
 * note:
-* this code uses underscore ( _.prg ) as modern replacement for addproperty()
+* this code uses underscore ( _.prg ) as replacement for addproperty()
 * available at https://raw.githubusercontent.com/nftools/underscore/master/_.prg
 * the "addobject" version is below ( function testme_no_ )
 *---------------------------------------------------------------------------------
@@ -145,24 +163,3 @@ Endwith
 
 
 Messagebox( 'Please explore "oInfo" in debugger watch window or command line ',0)
-
-*----------------------------------
-procedure testme_no_
-*----------------------------------
-Public oinfo
-
-oinfo = Create('empty')
-
-Wait 'Running WMI Query....please wait.. ' Window Nowait At Wrows()/2,Wcols()/2
-
-
-addproperty( oinfo, "monitors"  , wmiquery('Win32_PNPEntity where service = "monitor"') )
-addproperty( oInfo, "diskdrive" , wmiquery('Win32_diskDrive') )
-addproperty( oInfo, "startup" ,   wmiquery('Win32_startupCommand'))
-addproperty( oInfo, "BaseBoard" , wmiquery('Win32_baseBoard') )
-addproperty( oInfo, "netAdaptersConfig",  wmiquery('Win32_NetworkAdapterConfiguration') )
-
-
-Messagebox( 'Please explore "oInfo" in debugger watch window or command line ',0)
-
-
